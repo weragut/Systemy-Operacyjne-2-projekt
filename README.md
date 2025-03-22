@@ -15,7 +15,10 @@ Sklonuj sobie
 
 ```bash
 git clone https://github.com/weragut/Systemy-Operacyjne-2-projekt.git
-cd cmake-build-debug
+```
+Następnie należy przejść do folderu projektu komendą:
+```bash
+cd Systemy-Operacyjne-2-projekt
 ```
 
 ### Budowanie projektu
@@ -24,6 +27,11 @@ Skorzystaj z poniższej komendy, aby zbudować projekt:
 ```bash
 g++ -std=c++20 -o SO.exe main.cpp DiningPhilosophers.cpp
 ```
+To chyba też trzeba: DO SPRAWDZENIA
+```bash
+cmake-build-debug
+```
+
 Po skompilowaniu projektu, uruchom go za pomocą poniższej komendy, podając jako argument pożądaną liczbę filozofów.
 
 ```bash
