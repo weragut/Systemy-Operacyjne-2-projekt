@@ -18,10 +18,17 @@ git clone https://github.com/yourusername/yourrepository.git
 cd cmake-build-debug
 ```
 
-### Skorzystaj z poniższej komendy, aby skompilować projekt:
+### Budowanie projektu
+Skorzystaj z poniższej komendy, aby zbudować projekt:
 
+```bash
+g++ -std=c++20 -o SO.exe main.cpp DiningPhilosophers.cpp
+```
+Po skompilowaniu projektu, uruchom go za pomocą poniższej komendy, podając jako argument pożądaną liczbę filozofów.
 
-
+```bash
+./SO 6
+```
 
 
 
