@@ -1,1 +1,1 @@
-# Systemy-Operacyjne-2-projekt
+# Problem jedzących Filozofów
