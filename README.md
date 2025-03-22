@@ -14,7 +14,7 @@ Ten projekt jest symulacją problemu jedzących filozofów, zaimplementowaną w 
 Sklonuj sobie
 
 ```bash
-https://github.com/weragut/Systemy-Operacyjne-2-projekt.git
+git clone https://github.com/weragut/Systemy-Operacyjne-2-projekt.git
 cd cmake-build-debug
 ```
 
