@@ -8,9 +8,6 @@ DiningPhilosophers::DiningPhilosophers(size_t n)
     // create a semaphore for every philosopher
     for (size_t i = 0; i < philosophers_number; ++i) {
         both_forks_available.push_back(make_unique<binary_semaphore>(0));
-        // initial value 0 shows no access to forks
-        // 0 - no forks available
-        // 1 - both forks available
     }
 }
 
