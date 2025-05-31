@@ -68,4 +68,78 @@ Prosty, wielowątkowy chat sieciowy napisany w C++ z wykorzystaniem socketów do
 
 Serwer obsługuje wielu klientów jednocześnie, wykorzystując wielowątkowość, co pozwala na asynchroniczną komunikację oraz zapewnia płynne działanie chatu. Projekt na systemach Windows wymaga biblioteki ws2_32.
 
+## Wątki
+Projekt wykorzystuje wielowątkowość, aby zapewnić równoczesną i asynchroniczną komunikację pomiędzy wieloma klientami oraz serwerem. 
 
+- **Wątek główny serwera** :  
+  Nasłuchuje na połączenia przychodzące od klientów za pomocą funkcji `accept()`. Gdy nowy klient się połączy, serwer tworzy dla niego osobny wątek, który zajmuje się dalszą komunikacją z tym klientem. Pozwala to na obsługę wielu klientów jednocześnie bez blokowania głównego wątku serwera.
+
+- **Wątki klientów na serwerze**:  
+  Każdy z nich odbiera wiadomości od przypisanego klienta (`recv()`), a następnie wysyła je do pozostałych klientów. Wątki działają równolegle i niezależnie, co umożliwia asynchroniczną obsługę komunikacji.
+
+- **Wątek odbierający wiadomości po stronie klienta**:  
+  Ten wątek działa równolegle z główną pętlą wysyłania wiadomości w kliencie. Odbiera na bieżąco wiadomości z serwera (`recv()`), wyświetlając je w konsoli, dzięki czemu użytkownik może jednocześnie wysyłać i odbierać wiadomości bez blokad.
+
+
+## Sekcje krytyczne
+
+W serwerze czatu działają równocześnie wątki, które współdzielą zasoby, takie jak lista aktywnych klientów oraz konsola służąca do wyświetlania komunikatów. Aby uniknąć błędów związanych z jednoczesnym dostępem wielu wątków do tych zasobów (tzw. race conditions), zastosowano mechanizmy synchronizacji, które chronią sekcje krytyczne.
+
+### Mutexy:
+- **clients_mutex** - Chroni dostęp do wspólnej listy `active_clients`, która zawiera sockety i identyfikatory aktywnych klientów. Zapewnia bezpieczne dodawanie, usuwanie klientów.
+ 
+### Semafory
+- **output_mutex** - Używany do synchronizacji wypisywania informacji na konsolę (np. przychodzących wiadomości, logów połączeń i rozłączeń). Zapobiega mieszaniu się tekstu wypisywanego równocześnie przez wiele wątków.
+
+
+## Instrukcja uruchomienia projektu
+### Wymagania
+
+- **Kompilator C++** wspierający C++20 
+- **Terminal**
+
+### Klonowanie repozytorium
+
+Za pomocą poniższej komendy sklonuj repozytorium 
+
+```bash
+git clone https://github.com/weragut/Systemy-Operacyjne-2-projekt.git
+```
+Następnie należy przejść do folderu projektu komendą:
+```bash
+cd Systemy-Operacyjne-2-projekt
+```
+
+### Budowanie projektu
+Skorzystaj z poniższych komend, aby zbudować aplikacje serwera i klienta:
+
+Budowa aplikacji serwera:
+```bash
+g++ -std=c++20 -o chat_server chat/server.cpp -lws2_32
+```
+Budowa aplikacji klienta:
+```bash
+g++ -std=c++20 -o chat_client chat/client.cpp -lws2_32
+```
+### Uruchamianie serwera i klientów
+W osobnych terminalach z poziomu katalogu Systemy-Operacyjne-2-projekt.
+1. Uruchom serwer czatu:
+```bash
+./chat_server
+```
+Serwer uruchomi się lokalnie na porcie 54000 i będzie oczekiwał na połączenia od klientów.
+
+2. Uruchom klienta
+   
+Każdego klienta uruchom w osobnym terminalu z poziomu katalogu Systemy-Operacyjne-2-projekt.
+```bash
+./chat_client
+```
+Każdy klient połączy się z lokalnym serwerem i będzie mógł przesyłać oraz odbierać wiadomości w czasie rzeczywistym.
+
+3. Zakończenie sesji
+
+Aby zakończyć połączenie klienta z serwerem, wpisz w konsoli klienta:
+```bash
+/exit
+```
