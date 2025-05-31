@@ -41,7 +41,8 @@ cd Systemy-Operacyjne-2-projekt
 Skorzystaj z poniższej komendy, aby zbudować projekt:
 
 ```bash
-g++ -std=c++20 -o SO.exe main.cpp DiningPhilosophers.cpp
+g++ -std=c++20 -o SO.exe philosophers/main.cpp philosophers/DiningPhilosophers.cpp
+
 ```
 
 Po skompilowaniu projektu, uruchom go za pomocą poniższej komendy, podając jako argument pożądaną liczbę filozofów.
