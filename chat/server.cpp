@@ -1,102 +1,141 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <string>
+#include <mutex>
+#include <algorithm>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 
+#pragma comment(lib, "ws2_32.lib") // required Winsock
 using namespace std;
 
-#pragma comment(lib, "ws2_32.lib") // Link with WinSock library
+// client socket and id
+struct ClientInfo {
+    SOCKET socket;
+    int id;
+};
 
-const int PORT = 12345;
-const int BUFFER_SIZE = 1024;
+// list of active clients
+vector<ClientInfo> active_clients;
+// mutex to protect access to clients list
+mutex clients_mutex;
+// mutex to protect console output
+mutex output_mutex;
 
-// Handle client connection in separate thread
+// color based on client id
+string getClientColorCode(int clientId) {
+    const string codes[] = {
+        "\033[91m", // red
+        "\033[94m", // blue
+        "\033[95m", // purple
+        "\033[96m", // cyan
+        "\033[92m", // green
+        "\033[93m", // yellow
+    };
+    return codes[clientId % 6];
+}
+
+// sending message to all clients except the sender
+void broadcastMessage(const string& message, SOCKET sender, int senderId) {
+    // colored message
+    string coloredMessage = getClientColorCode(senderId) + message + "\033[0m";
+
+    // locking the mutex
+    lock_guard<mutex> lock(clients_mutex);
+    for (const auto& client : active_clients) {
+        if (client.socket != sender) {
+            send(client.socket, coloredMessage.c_str(), (int)coloredMessage.size(), 0); // send message to other clients
+        }
+    }
+}
+
+// client connection
 void handleClient(SOCKET clientSocket, int clientId) {
-    char buffer[BUFFER_SIZE];
+    char buffer[1024]; // message data buffer
 
     while (true) {
-        // Clear the buffer
-        memset(buffer, 0, BUFFER_SIZE);
-
-        // Receive message from client
-        int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+        memset(buffer, 0, sizeof(buffer)); // clears the buffer
+        int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0); // reciving data
+        // disconnected client
         if (bytesReceived <= 0) {
-            cout << "Client " << clientId << " disconnected." << endl;
-            break;
+            {
+                lock_guard<mutex> lock(output_mutex);
+                cout << getClientColorCode(clientId) << "Client #" << clientId << " disconnected." << "\033[0m" << endl;
+
+            }
+
+            {
+                // remove client from active clients
+                lock_guard<mutex> lock(clients_mutex);
+                for (auto it = active_clients.begin(); it != active_clients.end(); ) {
+                    // searching for the disconnected client
+                    if (it->socket == clientSocket) {
+                        it = active_clients.erase(it);  // returns an it to the next element
+                        break;
+                    }
+                }
+            }
+
+            closesocket(clientSocket); // close the socket and end the thread
+            return;
         }
 
-        // Print received message
-        cout << "[Client " << clientId << "]: " << buffer << endl;
-    }
+        string msg = buffer; // data buffer to string
 
-    // Close socket
-    closesocket(clientSocket);
+        // print message to server console
+        {
+            lock_guard<mutex> lock(output_mutex);
+            cout << getClientColorCode(clientId) << "Client #" << clientId << " says: " << msg<< "\033[0m" << endl;
+
+
+        }
+
+        // send message to clients
+        string fullMsg = "Client #" + to_string(clientId) + ": " + msg;
+        broadcastMessage(fullMsg, clientSocket, clientId);
+    }
 }
 
 int main() {
-    // Initialize WinSock
     WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        cerr << "WSAStartup failed." << endl;
-        return 1;
-    }
+    WSAStartup(MAKEWORD(2, 2), &wsaData); // Winsock initialization
 
-    // Create server socket
-    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == INVALID_SOCKET) {
-        cerr << "Socket creation failed." << endl;
-        WSACleanup();
-        return 1;
-    }
+    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0); // create socket
 
-    // Server address setup
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(PORT);
+    // TCP server address
+    sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET; // IPv4
+    serverAddr.sin_port = htons(54000); // port
+    serverAddr.sin_addr.s_addr = INADDR_ANY; // accept connections
 
-    // Bind socket
-    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        cerr << "Binding failed." << endl;
-        closesocket(serverSocket);
-        WSACleanup();
-        return 1;
-    }
+    // assigns a socket to the selected port and address
+    bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr));
+    listen(serverSocket, SOMAXCONN);
 
-    // Start listening
-    if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
-        cerr << "Listen failed." << endl;
-        closesocket(serverSocket);
-        WSACleanup();
-        return 1;
-    }
+    cout << "Server running. Listening for client connections. " << endl;
 
-    cout << "Server listening on port " << PORT << "..." << endl;
+    int client_id = 0;
 
-    vector<thread> clientThreads;
-    int clientId = 0;
-
-    // Main server loop
     while (true) {
-        // Accept new client
-        sockaddr_in clientAddr{};
-        int clientSize = sizeof(clientAddr);
-        SOCKET clientSocket = accept(serverSocket, (sockaddr*)&clientAddr, &clientSize);
-        if (clientSocket == INVALID_SOCKET) {
-            cerr << "Failed to accept connection." << endl;
-            continue;
+        // accepts connections
+        SOCKET clientSocket = accept(serverSocket, nullptr, nullptr);
+        {
+            // add to active clients
+            lock_guard<mutex> lock(clients_mutex);
+            active_clients.push_back({ clientSocket, client_id });
         }
 
-        cout << "Client " << clientId << " connected." << endl;
+        {
+            // print message to server console
+            lock_guard<mutex> lock(output_mutex);
+            cout << getClientColorCode(client_id) << "Client #" << client_id << " connected." << "\033[0m" << endl;
 
-        // Start new thread to handle this client
-        clientThreads.emplace_back(handleClient, clientSocket, clientId);
-        clientId++;
-    }
+        }
 
-    // Clean up (won't be reached in this infinite loop)
-    for (auto& t : clientThreads) {
-        if (t.joinable()) t.join();
+        // create a new thread for the client
+        thread t(handleClient, clientSocket, client_id++);
+        t.detach(); // detach the thread to allow it to run independently
     }
 
     closesocket(serverSocket);

@@ -1,57 +1,57 @@
 #include <iostream>
+#include <thread>
 #include <string>
 #include <winsock2.h>
-
-using namespace std;
+#include <ws2tcpip.h>
 
 #pragma comment(lib, "ws2_32.lib")
+using namespace std;
 
-const int PORT = 12345;
+// receive messages from server
+void receiveMessages(SOCKET sock) {
+    char buffer[1024]; // data buffer
+    while (true) {
+        memset(buffer, 0, sizeof(buffer)); // clear buffer before receiving
+        int bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
+        // print message
+        if (bytesReceived > 0) {
+            cout << endl << buffer << endl << "> ";
+        }
+    }
+}
 
 int main() {
-    // Initialize WinSock
     WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        cerr << "WSAStartup failed." << endl;
-        return 1;
-    }
+    WSAStartup(MAKEWORD(2, 2), &wsaData); // Winsock initialization
 
-    // Create socket
-    SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket == INVALID_SOCKET) {
-        cerr << "Socket creation failed." << endl;
-        WSACleanup();
-        return 1;
-    }
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0); // create TCP socket
+    sockaddr_in server; // server address structure (type, port, IP nr)
+    server.sin_family = AF_INET; // IPv4
+    server.sin_port = htons(54000); // port
+    inet_pton(AF_INET, "127.0.0.1", &server.sin_addr); // convert IP address to binary
 
-    // Set up server address
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(PORT);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // localhost
-
-    // Connect to server
-    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+    // connect to server
+    if (connect(sock, (sockaddr*)&server, sizeof(server)) != 0) {
         cerr << "Connection to server failed." << endl;
-        closesocket(clientSocket);
-        WSACleanup();
         return 1;
     }
 
-    cout << "Connected to server. Type messages below:" << endl;
+    cout << "Connected to chat server!" << endl;
 
-    // Message sending loop
+    // new thread for receiving messages
+    thread t(receiveMessages, sock);
+    t.detach();
+
     string message;
     while (true) {
+        cout << "> ";
         getline(cin, message);
         if (message == "/exit") break;
-
-        send(clientSocket, message.c_str(), message.length(), 0);
+        // send message to server
+        send(sock, message.c_str(), (int)message.length(), 0);
     }
 
-    // Cleanup
-    closesocket(clientSocket);
+    closesocket(sock);
     WSACleanup();
-
     return 0;
 }
