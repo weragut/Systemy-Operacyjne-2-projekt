@@ -58,7 +58,7 @@ Po skompilowaniu projektu, uruchom go za pomocą poniższej komendy, podając ja
 
 # Projekt 2: Wielowątkowy serwer czatu
 
-### Opis projektu Chat TCP
+### Opis projektu 
 
 Prosty, wielowątkowy chat sieciowy napisany w C++ z wykorzystaniem socketów do komunikacji. Projekt składa się z dwóch oddzielnych aplikacji:
 
