@@ -1,4 +1,7 @@
-# Problem jedzących filozofów
+# Systemy Operacyjne - Projekty C++
+---
+
+# Projekt 1: Problem jedzących filozofów
 
 Ten projekt jest symulacją problemu jedzących filozofów, zaimplementowaną w C++ z wykorzystaniem mechanizmów synchronizacji: semafory i mutexy.
 
@@ -51,5 +54,18 @@ Po skompilowaniu projektu, uruchom go za pomocą poniższej komendy, podając ja
 ./SO 6
 ```
 
+---
+
+# Projekt 2: Wielowątkowy serwer czatu
+
+### Opis projektu Chat TCP
+
+Prosty, wielowątkowy chat sieciowy napisany w C++ z wykorzystaniem socketów do komunikacji. Projekt składa się z dwóch oddzielnych aplikacji:
+
+- **chat_server** — serwer, który zarządza wieloma połączeniami klientów, odbiera od nich wiadomości i rozsyła je do wszystkich podłączonych użytkowników. Serwer pełni funkcję centralnego punktu komunikacji.
+
+- **chat_client** — klient łączący się z serwerem, umożliwiający użytkownikowi wysyłanie wiadomości oraz odbieranie ich od innych uczestników czatu w czasie rzeczywistym.
+
+Serwer obsługuje wielu klientów jednocześnie, wykorzystując wielowątkowość, co pozwala na asynchroniczną komunikację oraz zapewnia płynne działanie chatu. Projekt na systemach Windows wymaga biblioteki ws2_32.
 
 
